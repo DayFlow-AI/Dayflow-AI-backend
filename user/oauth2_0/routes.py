@@ -45,7 +45,6 @@ async def auth_callback(code: OauthSchema, db: SessionDep) -> Response:
             code=code.code,
             grant_type="authorization_code",
         )
-        await sleep(5)
         user_data = await get_google_profile(token["access_token"])
         stmt = (
             insert(UsersORM)
