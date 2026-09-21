@@ -10,6 +10,7 @@ dependencies = [
     "fastapi>=0.141.1",
     "fastapi-jwt>=0.3.0",
     "httpx>=0.28.1",
+    "httpx-retries>=0.6.0",
     "joserfc>=1.7.4",
     "psycopg>=3.3.4",
     "pwdlib[argon2]>=0.3.1",

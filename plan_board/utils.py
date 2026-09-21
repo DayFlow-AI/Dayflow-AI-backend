@@ -1,10 +1,9 @@
 from enum import Enum
 
-from fastapi import WebSocketException
+from fastapi import WebSocket, WebSocketException
 from fastapi.logger import logger
 from fastapi_jwt.jwt_backends import AuthlibJWTBackend
 from fastapi_jwt.jwt_backends.abstract_backend import BackendException
-from starlette.websockets import WebSocket
 
 from user.utils import sec_key_access
 

@@ -6,6 +6,7 @@ from authlib.integrations.base_client import OAuthError
 from authlib.integrations.httpx_client import AsyncOAuth2Client
 from fastapi import APIRouter, HTTPException, Response, status
 from fastapi.logger import logger
+from httpx_retries import Retry, RetryTransport
 from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
@@ -20,16 +21,22 @@ from user.utils import access_token_conf, gen_jwt, refresh_token_conf
 
 oauth2_router = APIRouter(prefix="/api/oauth2", tags=["oauth2"])
 
+transport = RetryTransport(
+    retry=Retry(total=5, backoff_factor=1.0, respect_retry_after_header=True),
+    transport=httpx.AsyncHTTPTransport()
+)
+
 client = AsyncOAuth2Client(
     client_id=settings.client_id,
     client_secret=settings.client_sec,
     redirect_uri=settings.redirect_uri,
     scope=settings.user_scopes,
+    transport=transport,
 )
 
 
-@oauth2_router.post("/auth/callback", status_code=status.HTTP_200_OK,
-response_model=OauthSchema
+@oauth2_router.post(
+    "/auth/callback", status_code=status.HTTP_200_OK, response_model=OauthSchema
 )
 async def auth_callback(code: OauthSchema, db: SessionDep) -> Response:
     try:
