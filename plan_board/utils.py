@@ -1,9 +1,10 @@
-from enum import Enum
+from collections import defaultdict
+from typing import Any
 
 from fastapi import WebSocket, WebSocketException
-from fastapi.logger import logger
 from fastapi_jwt.jwt_backends import AuthlibJWTBackend
 from fastapi_jwt.jwt_backends.abstract_backend import BackendException
+from starlette.websockets import WebSocketDisconnect
 
 from user.utils import sec_key_access
 
@@ -11,53 +12,42 @@ auth_jwt = AuthlibJWTBackend()
 
 
 async def access_security(
-    cookie: dict[str, str],
+    websocket: WebSocket,
 ) -> int | None:
-    access_has = cookie.get("access_token_cookie")
-    if access_has:
-        try:
-            user = auth_jwt.decode(access_has, sec_key_access)
-            if user:
-                if user.get("type") is None or user.get("type") != "access":
-                    raise WebSocketException(code=1008, reason="invalid type token")
-                return int(user.get("subject", "")["uid"])
-            return None
-        except BackendException as e:
-            logger.exception("access_security failed")
-            raise WebSocketException(code=1008, reason="Token failed") from e
-    raise WebSocketException(code=1008, reason="Empty credentials")
+    access_has = websocket.cookies.get("access_token_cookie")
+    if not access_has:
+        return None
 
+    try:
+        user = auth_jwt.decode(access_has, sec_key_access)
+    except BackendException as e:
+        await websocket.close(code=1008, reason="Token failed")
+        raise WebSocketDisconnect(code=1008, reason="Token failed") from e
 
-class StatusCard(Enum):
-    completed = "completed"
-    in_progress = "in_progress"
-    pending = "pending"
-    cancelled = "cancelled"
-    new = "new"
+    if not user or user.get("type") != "access":
+        raise WebSocketException(code=1008, reason="invalid token")
+    subject = user.get("subject") or {}
+    if "uid" not in subject:
+        raise WebSocketException(code=1008, reason="token has no uid")
 
-
-class CardColor(Enum):
-    completed = "#22c55e"
-    in_progress = "#3b82f6"
-    pending = "#f59e0b"
-    cancelled = "#ef4444"
-    new = "#64748b"
+    return int(subject["uid"])
 
 
 class ConnectionManager:
-    def __init__(self, chat_id: int):
-        self.connection = {chat_id: set()}
+    def __init__(self):
+        self._connections: defaultdict[int, set[WebSocket]] = defaultdict(set)
 
-    async def connect(self, chat_id: int, websocket: WebSocket):
-        self.connection[chat_id].add(websocket)
-        print(self.connection[chat_id])
+    async def connect(self, user_id: int, websocket: WebSocket):
+        self._connections[user_id].add(websocket)
 
-    async def disconnect(self, chat_id: int, websocket: WebSocket):
-        self.connection[chat_id].discard(websocket)
+    async def disconnect(self, user_id: int, websocket: WebSocket):
+        sockets = self._connections.get(user_id)
+        if not sockets:
+            return
+        sockets.discard(websocket)
+        if not sockets:
+            del self._connections[user_id]
 
-        if len(self.connection[chat_id]) == 0:
-            del self.connection[chat_id]
-
-    async def pool_messages(self, chat_id: int, messages: str):
-        for user in self.connection[chat_id]:
-            await user.send_text(messages)
+    async def pool_messages(self, user_id: int, messages: Any):
+        for ws in self._connections[user_id]:
+            await ws.send_json(messages)

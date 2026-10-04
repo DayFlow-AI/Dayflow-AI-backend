@@ -97,7 +97,7 @@ async def update_board(
             )
         ).one_or_none()
         await db.commit()
-        
+
     except ResourceClosedError:
         await db.rollback()
         raise HTTPException(status_code=404, detail="Nothing to change")

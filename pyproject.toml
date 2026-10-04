@@ -24,5 +24,9 @@ dependencies = [
 
 [tool.ruff]
 extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+ignore = ["TRY203"]
+
 [tool.ruff.format]
 quote-style = "double"

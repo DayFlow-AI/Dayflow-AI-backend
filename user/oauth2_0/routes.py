@@ -1,4 +1,3 @@
-from asyncio import sleep
 from datetime import UTC, datetime
 
 import httpx
@@ -23,7 +22,7 @@ oauth2_router = APIRouter(prefix="/api/oauth2", tags=["oauth2"])
 
 transport = RetryTransport(
     retry=Retry(total=5, backoff_factor=1.0, respect_retry_after_header=True),
-    transport=httpx.AsyncHTTPTransport()
+    transport=httpx.AsyncHTTPTransport(),
 )
 
 client = AsyncOAuth2Client(

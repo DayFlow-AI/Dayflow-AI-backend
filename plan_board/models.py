@@ -12,7 +12,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db_conf.db import Base
-from plan_board.utils import CardColor, StatusCard
+from plan_board.schemas import StatusCard
 from user.models import UsersORM
 
 
@@ -21,6 +21,8 @@ class ChatORM(Base):
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     owner: Mapped[UsersORM] = relationship()
     title: Mapped[str] = mapped_column(Text, nullable=False)
+    cursor_x: Mapped[float] = mapped_column(Float, default=0.0)
+    cursor_y: Mapped[float] = mapped_column(Float, default=0.0)
     cards: Mapped[list[CardORM]] = relationship(
         back_populates="chat",
         cascade="all, delete-orphan",
@@ -51,12 +53,9 @@ class CardORM(Base):
         server_default=StatusCard.new.value,
         nullable=False,
     )
-
+    color: Mapped[str] = mapped_column(default="#ffffff")
+    title: Mapped[str] = mapped_column(Text, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False, default="empty")
-
-    @property
-    def color(self) -> str:
-        return CardColor[self.status.name].value
 
 
 card_manager = Table(
