@@ -18,7 +18,7 @@ from db_conf.db import AsyncSession, SessionDep
 from plan_board.models import CardORM, ChatORM, card_links
 from plan_board.schemas import (
     CardDeleteSchema,
-    CardLinkSchema,
+    CardLinkerSchema,
     CardOutSchema,
     CardSchema,
 )
@@ -48,7 +48,7 @@ async def _handle_command(
             )
             return {
                 "message": [
-                    CardOutSchema.model_validate(c).model_dump() for c in cards
+                    CardOutSchema.model_validate(c).model_dump_json() for c in cards
                 ],
             }
         case "new_card":
@@ -58,14 +58,14 @@ async def _handle_command(
                 .returning(CardORM)
             )
             return {
-                "message": CardOutSchema.model_validate(new_card).model_dump(),
+                "message": CardOutSchema.model_validate(new_card).model_dump_json(),
             }
         case "delete_card":
             del_list = CardDeleteSchema.model_validate(command.get("body")).model_dump()
             await db.execute(delete(CardORM).where(CardORM.id.in_(del_list)))
             return {"message": f"cards {del_list!r} deleted"}
         case "link_card":
-            card_link = CardLinkSchema.model_validate(command.get("body"))
+            card_link = CardLinkerSchema.model_validate(command.get("body"))
             await db.execute(
                 insert(card_links).values(
                     from_card_id=card_link.from_card_id, to_card_id=card_link.to_card_id
@@ -97,7 +97,7 @@ async def websocket_endpoint(websocket: WebSocket, db: SessionDep) -> None:
 
         chat = (
             await db.execute(select(ChatORM).where(ChatORM.owner_id == user_id))
-        ).scalar_one()
+        ).scalar_one_or_none()
 
         chat_id = chat.id
         chat_title = chat.title

@@ -26,7 +26,13 @@ class StatusCard(Enum):
     new = "new"
 
 
-class CardLinkSchema(BaseModel):
+class CardLinkerSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    from_card_id: int
+    to_card_id: int
+
+
+class LinkViewSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int = None
 
@@ -42,7 +48,7 @@ class CardSchema(BaseModel):
     color: str = "#ffffff"
     title: str = Field(max_length=50)
     text: str
-    links: list[CardLinkSchema] = []
+    links: list[LinkViewSchema] = []
 
 
 class CardOutSchema(CardSchema):
