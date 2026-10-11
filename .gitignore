@@ -12,3 +12,5 @@ client_secret_*.json
 .DS_Store
 *.log
 *.http
+.lazy.lua
+

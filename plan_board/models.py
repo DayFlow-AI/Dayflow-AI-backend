@@ -29,14 +29,31 @@ class ChatORM(Base):
     )
 
 
+card_links = Table(
+    "card_links",
+    Base.metadata,
+    Column(
+        "from_card_id",
+        Integer,
+        ForeignKey("card_orm.id", ondelete="CASCADE"),
+        index=True,
+    ),
+    Column(
+        "to_card_id", Integer, ForeignKey("card_orm.id", ondelete="CASCADE"), index=True
+    ),
+    CheckConstraint("from_card_id <> to_card_id", name="ck_no_self_link"),
+    UniqueConstraint("from_card_id", "to_card_id", name="uq_card_link"),
+)
+
+
 class CardORM(Base):
     __tablename__ = "card_orm"
     chat_id: Mapped[int] = mapped_column(ForeignKey("chat_orm.id"), index=True)
     chat: Mapped[ChatORM] = relationship(back_populates="cards")
     links: Mapped[list[CardORM]] = relationship(
         secondary="card_links",
-        primaryjoin="CardORM.id == card_links.c.from_card_id",
-        secondaryjoin="CardORM.id == card_links.c.to_card_id",
+        primaryjoin=lambda: CardORM.id == card_links.c.from_card_id,
+        secondaryjoin=lambda: CardORM.id == card_links.c.to_card_id,
     )
 
     pos_x: Mapped[float] = mapped_column(Float, default=0.0)
@@ -56,20 +73,3 @@ class CardORM(Base):
     color: Mapped[str] = mapped_column(default="#ffffff")
     title: Mapped[str] = mapped_column(Text, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False, default="empty")
-
-
-card_manager = Table(
-    "card_links",
-    Base.metadata,
-    Column(
-        "from_card_id",
-        Integer,
-        ForeignKey("card_orm.id", ondelete="CASCADE"),
-        index=True,
-    ),
-    Column(
-        "to_card_id", Integer, ForeignKey("card_orm.id", ondelete="CASCADE"), index=True
-    ),
-    CheckConstraint("from_card_id <> to_card_id", name="ck_no_self_link"),
-    UniqueConstraint("from_card_id", "to_card_id", name="uq_card_link"),
-)

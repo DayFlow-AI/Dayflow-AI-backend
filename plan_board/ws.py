@@ -11,10 +11,11 @@ from pydantic import ValidationError
 from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import selectinload
 from uvicorn.protocols.utils import ClientDisconnected
 
 from db_conf.db import AsyncSession, SessionDep
-from plan_board.models import CardORM, ChatORM, card_manager
+from plan_board.models import CardORM, ChatORM, card_links
 from plan_board.schemas import (
     CardDeleteSchema,
     CardLinkSchema,
@@ -35,7 +36,13 @@ async def _handle_command(
     match command.get("mode"):
         case "get_state":
             cards = (
-                (await db.execute(select(CardORM).where(CardORM.chat_id == chat_id)))
+                (
+                    await db.execute(
+                        select(CardORM)
+                        .options(selectinload(CardORM.links))
+                        .where(CardORM.chat_id == chat_id)
+                    )
+                )
                 .scalars()
                 .all()
             )
@@ -58,9 +65,9 @@ async def _handle_command(
             await db.execute(delete(CardORM).where(CardORM.id.in_(del_list)))
             return {"message": f"cards {del_list!r} deleted"}
         case "link_card":
-            card_link = CardLinkSchema.model_validate(command.get("body")).model_dump()
+            card_link = CardLinkSchema.model_validate(command.get("body"))
             await db.execute(
-                insert(card_manager).values(
+                insert(card_links).values(
                     from_card_id=card_link.from_card_id, to_card_id=card_link.to_card_id
                 )
             )

@@ -26,6 +26,11 @@ class StatusCard(Enum):
     new = "new"
 
 
+class CardLinkSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int = None
+
+
 class CardSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     chat_id: int
@@ -33,10 +38,11 @@ class CardSchema(BaseModel):
     pos_y: float = 0.0
     width: float = 0.0
     height: float = 0.0
-    status: StatusCard = StatusCard.new
+    status: StatusCard = "new"
     color: str = "#ffffff"
     title: str = Field(max_length=50)
     text: str
+    links: list[CardLinkSchema] = []
 
 
 class CardOutSchema(CardSchema):
@@ -46,10 +52,3 @@ class CardOutSchema(CardSchema):
 class CardDeleteSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: list[int] = Field(default_factory=list)
-
-
-class CardLinkSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    from_card_id: int
-    to_card_id: int
