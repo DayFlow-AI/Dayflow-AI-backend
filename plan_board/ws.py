@@ -21,8 +21,10 @@ from plan_board.schemas import (
     CardLinkerSchema,
     CardOutSchema,
     CardSchema,
+    CardWithLinkSchema,
 )
 from plan_board.utils import ConnectionManager, access_security
+from user.models import UsersORM
 
 ws_router = APIRouter()
 manager = ConnectionManager()
@@ -48,21 +50,32 @@ async def _handle_command(
             )
             return {
                 "message": [
-                    CardOutSchema.model_validate(c).model_dump_json() for c in cards
+                    CardWithLinkSchema.model_validate(c).model_dump(mode="json")
+                    for c in cards
                 ],
             }
         case "new_card":
-            new_card = await db.execute(
-                insert(CardORM)
-                .values(**CardSchema.model_validate(command.get("body")).model_dump())
-                .returning(CardORM)
-            )
+            new_card = (
+                await db.execute(
+                    insert(CardORM)
+                    .values(
+                        **CardSchema.model_validate(command.get("body")).model_dump()
+                    )
+                    .returning(CardORM)
+                )
+            ).scalar_one()
             return {
-                "message": CardOutSchema.model_validate(new_card).model_dump_json(),
+                "message": CardOutSchema.model_validate(new_card).model_dump(
+                    mode="json"
+                ),
             }
         case "delete_card":
-            del_list = CardDeleteSchema.model_validate(command.get("body")).model_dump()
-            await db.execute(delete(CardORM).where(CardORM.id.in_(del_list)))
+            del_list = CardDeleteSchema.model_validate(command.get("body"))
+            await db.execute(
+                delete(CardORM).where(
+                    CardORM.id.in_(del_list.id), CardORM.chat_id == chat_id
+                )
+            )
             return {"message": f"cards {del_list!r} deleted"}
         case "link_card":
             card_link = CardLinkerSchema.model_validate(command.get("body"))
@@ -78,8 +91,10 @@ async def _handle_command(
             return {"error": f"unknown command {command.get('mode')!r}"}
 
 
-@ws_router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket, db: SessionDep) -> None:
+@ws_router.websocket("/ws/{chat_id}")
+async def websocket_endpoint(
+    websocket: WebSocket, db: SessionDep, chat_id: int
+) -> None:
     await websocket.accept()
     user_id: int | None = None
     try:
@@ -96,10 +111,23 @@ async def websocket_endpoint(websocket: WebSocket, db: SessionDep) -> None:
         await manager.connect(user_id, websocket)
 
         chat = (
-            await db.execute(select(ChatORM).where(ChatORM.owner_id == user_id))
+            await db.execute(
+                select(ChatORM).where(
+                    ChatORM.owner_id == user_id, ChatORM.id == chat_id
+                )
+            )
         ).scalar_one_or_none()
+        # username = (
+        #     await db.execute(
+        #         select(UsersORM.username).where(
+        #             UsersORM.id == user_id
+        #         )
+        #     )
+        # ).scalar_one_or_none()
+        if chat is None:
+            await websocket.close(code=1008, reason="unauthorized")
+            raise WebSocketDisconnect(code=1008, reason="unauthorized")
 
-        chat_id = chat.id
         chat_title = chat.title
 
         await websocket.send_json(
@@ -110,6 +138,7 @@ async def websocket_endpoint(websocket: WebSocket, db: SessionDep) -> None:
             try:
                 command = await websocket.receive_json()
                 answer = await _handle_command(command, db, chat_id)
+                await db.commit()
                 await websocket.send_json(answer)
 
             except SQLAlchemyError as e:
@@ -127,8 +156,17 @@ async def websocket_endpoint(websocket: WebSocket, db: SessionDep) -> None:
 
             except ValidationError as e:
                 await db.rollback()
-                logger.exception("ws %s pydantic error: %s", user_id, e)
-                await websocket.send_json({"error": "validation error check your data"})
+                logger.exception("ws %s pydantic error: %s", user_id, e.__dict__)
+                message = {
+                    i["loc"][0]: "is_missing"
+                    for i in e.errors()
+                    if i["type"] == "missing"
+                }
+                if not message:
+                    await websocket.send_json(
+                        {"message": "error data validation, check your data"}
+                    )
+                await websocket.send_json({"message": message})
 
     except WebSocketException, WebSocketDisconnect:
         logger.info("ws handshake aborted for %s", user_id)

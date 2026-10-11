@@ -44,15 +44,19 @@ class CardSchema(BaseModel):
     pos_y: float = 0.0
     width: float = 0.0
     height: float = 0.0
-    status: StatusCard = "new"
+    status: StatusCard = StatusCard.new
     color: str = "#ffffff"
     title: str = Field(max_length=50)
     text: str
-    links: list[LinkViewSchema] = []
 
 
 class CardOutSchema(CardSchema):
+    model_config = ConfigDict(from_attributes=True)
     id: int
+
+
+class CardWithLinkSchema(CardSchema):
+    links: list[LinkViewSchema] = []
 
 
 class CardDeleteSchema(BaseModel):
