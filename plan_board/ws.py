@@ -17,14 +17,13 @@ from uvicorn.protocols.utils import ClientDisconnected
 from db_conf.db import AsyncSession, SessionDep
 from plan_board.models import CardORM, ChatORM, card_links
 from plan_board.schemas import (
-    CardDeleteSchema,
     CardLinkerSchema,
     CardOutSchema,
     CardSchema,
     CardWithLinkSchema,
+    GroupDeleteSchema,
 )
 from plan_board.utils import ConnectionManager, access_security
-from user.models import UsersORM
 
 ws_router = APIRouter()
 manager = ConnectionManager()
@@ -70,7 +69,7 @@ async def _handle_command(
                 ),
             }
         case "delete_card":
-            del_list = CardDeleteSchema.model_validate(command.get("body"))
+            del_list = GroupDeleteSchema.model_validate(command.get("body"))
             await db.execute(
                 delete(CardORM).where(
                     CardORM.id.in_(del_list.id), CardORM.chat_id == chat_id

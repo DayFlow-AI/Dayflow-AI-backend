@@ -59,6 +59,6 @@ class CardWithLinkSchema(CardSchema):
     links: list[LinkViewSchema] = []
 
 
-class CardDeleteSchema(BaseModel):
+class GroupDeleteSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: list[int] = Field(default_factory=list)

@@ -94,8 +94,9 @@ async def update_board(
                     ChatORM.id == incoming_data.id,
                 )
                 .values(title=incoming_data.title)
+                .returning(ChatORM)
             )
-        ).one_or_none()
+        ).scalar_one()
         await db.commit()
 
     except ResourceClosedError:
@@ -108,4 +109,4 @@ async def update_board(
         raise HTTPException(status_code=500, detail="Server Side Error")
 
     else:
-        return ChatSchema.model_validate(answer)
+        return ChatSchema.model_validate(answer).model_dump()
