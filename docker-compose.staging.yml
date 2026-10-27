@@ -14,6 +14,7 @@ services:
       REDIRECT_URI: ${REDIRECT_URI}
       USER_SCOPES: '["email:read", "profile:read", "client_id"]'
       CORS_ORIGINS: '["http://localhost:5173", "http://172.30.88.252:5173"]'
+      CLOUDFLARE_TOKEN: ${CLOUDFLARE_TOKEN}
     ports:
       - "8000:8000"
 
@@ -27,3 +28,17 @@ services:
       WATCHTOWER_REGISTRY_USERNAME: ${GHCR_USER:-}
       WATCHTOWER_REGISTRY_PASSWORD: ${GHCR_TOKEN:-}
     command: --interval 30 --cleanup --stop-timeout 15s
+
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TOKEN}
+    depends_on:
+      - api
+    networks:
+      - web
+
+  networks:
+    web:

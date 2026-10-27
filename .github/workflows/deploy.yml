@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   build-and-push:
-    # нативный arm-раннер: образ собирается для реальной архитектуры малины без эмуляции
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v4
