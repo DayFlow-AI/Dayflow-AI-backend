@@ -32,10 +32,12 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
+    container_name: cloudflared
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TOKEN}
+    depends_on:
+      - app
     networks:
       - web
 
 networks:
   web:
-    driver: bridge
