@@ -35,7 +35,7 @@ services:
     container_name: cloudflared
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TOKEN}
     depends_on:
-      - app
+      - api
     networks:
       - web
 
