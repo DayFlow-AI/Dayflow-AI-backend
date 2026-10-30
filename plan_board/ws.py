@@ -90,7 +90,7 @@ async def _handle_command(
             return {"error": f"unknown command {command.get('mode')!r}"}
 
 
-@ws_router.websocket("/wss/{chat_id}")
+@ws_router.websocket("/ws/{chat_id}")
 async def websocket_endpoint(
     websocket: WebSocket, db: SessionDep, chat_id: int
 ) -> None:
