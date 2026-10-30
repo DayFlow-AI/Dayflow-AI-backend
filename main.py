@@ -1,6 +1,8 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError
 
 from plan_board.routes import plan_board_router
 from plan_board.ws import ws_router
@@ -22,6 +24,10 @@ app.include_router(oauth2_router)
 app.include_router(ws_router)
 
 app.include_router(plan_board_router)
+
+@app.exception_handler(OperationalError)
+async def operational_error_handler(request: Request, exc: OperationalError):
+    return JSONResponse(status_code=503, content={"detail": "database unavailable"})
 
 if __name__ == "__main__":
     uvicorn.run(

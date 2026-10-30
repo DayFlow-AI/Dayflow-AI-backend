@@ -17,7 +17,7 @@ if not all([db_user, db_pass, db_schema]):
     raise RuntimeError("environment variables not set check env file")
 
 db_url = f"postgresql+psycopg://{db_user}:{db_pass}@{db_host}:5432/{db_schema}"
-engine = create_async_engine(db_url)
+engine = create_async_engine(db_url, connect_args={"connect_timeout": 3})
 
 new_session = async_sessionmaker(engine, expire_on_commit=False)
 
