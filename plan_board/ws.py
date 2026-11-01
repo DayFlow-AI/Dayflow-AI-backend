@@ -104,7 +104,7 @@ async def websocket_endpoint(
             return
 
         if not user_id:
-            await websocket.close(code=1008, reason="unauthorized")
+            await websocket.close(code=1008, reason="incorrect user")
             return
 
         await manager.connect(user_id, websocket)
@@ -124,8 +124,8 @@ async def websocket_endpoint(
         #     )
         # ).scalar_one_or_none()
         if chat is None:
-            await websocket.close(code=1008, reason="unauthorized")
-            raise WebSocketDisconnect(code=1008, reason="unauthorized")
+            await websocket.close(code=1008, reason="chat missing")
+            raise WebSocketDisconnect(code=1008, reason="chat missing")
 
         chat_title = chat.title
 
