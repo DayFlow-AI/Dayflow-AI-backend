@@ -14,6 +14,8 @@ services:
       REDIRECT_URI: ${REDIRECT_URI}
       USER_SCOPES: '["email:read", "profile:read", "client_id"]'
       CORS_ORIGINS: '["http://localhost:5173", "http://172.30.88.252:5173"]'
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
     networks:
       - web
 

@@ -22,25 +22,27 @@ refresh_security = JwtRefreshCookie(secret_key=sec_key_refresh)
 auth_jwt = AuthlibJWTBackend()
 
 
-def access_token_conf(access_token) -> dict:
+def access_token_conf(access_token: str) -> dict:
     return {
         "key": "access_token_cookie",
         "value": access_token,
         "httponly": True,
-        "secure": False,
+        "secure": settings.cookie_secure,
         "samesite": "lax",
+        "domain": settings.cookie_domain or None,
         "max_age": 900,
         "path": "/",
     }
 
 
-def refresh_token_conf(refresh_token: str = "", delete=False) -> dict:
+def refresh_token_conf(refresh_token: str = "", delete: bool = False) -> dict:
     return {
         "key": "refresh_token_cookie",
         "value": refresh_token,
         "httponly": True,
-        "secure": False,
+        "secure": settings.cookie_secure,
         "samesite": "lax",
+        "domain": settings.cookie_domain or None,
         "max_age": -1 if delete else 2678400,
         "path": "/api/user/refresh",
     }
