@@ -26,6 +26,7 @@ class ChatORM(Base):
     cards: Mapped[list[CardORM]] = relationship(
         back_populates="chat",
         cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
 
@@ -48,7 +49,9 @@ card_links = Table(
 
 class CardORM(Base):
     __tablename__ = "card_orm"
-    chat_id: Mapped[int] = mapped_column(ForeignKey("chat_orm.id"), index=True)
+    chat_id: Mapped[int] = mapped_column(
+        ForeignKey("chat_orm.id", ondelete="CASCADE"), index=True
+    )
     chat: Mapped[ChatORM] = relationship(back_populates="cards")
     links: Mapped[list[CardORM]] = relationship(
         secondary="card_links",

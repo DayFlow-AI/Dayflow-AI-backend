@@ -27,8 +27,6 @@ class Settings(BaseSettings):
     port: int = 8000
     cors_origins: list[str] = []
 
-    # Кука: домен-родитель для доступа с поддоменов (напр. .kirirpy.tech).
-    # None — host-only (локальная разработка). secure включать только под HTTPS.
     cookie_domain: str | None = None
     cookie_secure: bool = False
 

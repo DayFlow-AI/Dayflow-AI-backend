@@ -1,13 +1,18 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.logger import logger
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import ResourceClosedError, SQLAlchemyError
 
 from db_conf.db import SessionDep
 from global_utils import AccessCredentials, ErrorResponse
 from plan_board.models import ChatORM
-from plan_board.schemas import ChatCreateSchema, ChatSchema, ListChatOutSchema
+from plan_board.schemas import (
+    ChatCreateSchema,
+    ChatSchema,
+    GroupDeleteSchema,
+    ListChatOutSchema,
+)
 
 plan_board_router = APIRouter(prefix="/api/board", tags=["PlanBoard"])
 
@@ -110,3 +115,32 @@ async def update_board(
 
     else:
         return ChatSchema.model_validate(answer).model_dump()
+
+
+@plan_board_router.delete(
+    "/delete_board",
+    responses={
+        500: {"description": "Server Error"},
+        401: {"description": "Unauthorized", "model": ErrorResponse},
+    },
+)
+async def delete_board(
+    db: SessionDep, credentials: AccessCredentials, incoming_data: GroupDeleteSchema
+):
+    try:
+        user_id = int(credentials["uid"])
+        del_list = GroupDeleteSchema.model_validate(incoming_data)
+        await db.execute(
+            delete(ChatORM).where(
+                ChatORM.id.in_(del_list.id), ChatORM.owner_id == user_id
+            )
+        )
+        await db.commit()
+
+    except SQLAlchemyError as e:
+        logger.error(e)
+        await db.rollback()
+        return {"message": "delete failed, check your data again"}
+
+    else:
+        return {"message": "success delete"}
