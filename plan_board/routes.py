@@ -130,11 +130,11 @@ async def delete_board(
     try:
         user_id = int(credentials["uid"])
         del_list = GroupDeleteSchema.model_validate(incoming_data)
-        await db.execute(
+        del_obj = (await db.execute(
             delete(ChatORM).where(
                 ChatORM.id.in_(del_list.id), ChatORM.owner_id == user_id
-            )
-        )
+            ).returning(ChatORM.title)
+        )).scalars().all()
         await db.commit()
 
     except SQLAlchemyError as e:
@@ -143,4 +143,6 @@ async def delete_board(
         return {"message": "delete failed, check your data again"}
 
     else:
-        return {"message": "success delete"}
+        if len(del_obj) > 0:
+            return {"message": f"success delete {', '.join(del_obj)}"}
+        return {"message": "nothing to delete"}
