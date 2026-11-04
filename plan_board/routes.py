@@ -130,11 +130,17 @@ async def delete_board(
     try:
         user_id = int(credentials["uid"])
         del_list = GroupDeleteSchema.model_validate(incoming_data)
-        del_obj = (await db.execute(
-            delete(ChatORM).where(
-                ChatORM.id.in_(del_list.id), ChatORM.owner_id == user_id
-            ).returning(ChatORM.title)
-        )).scalars().all()
+        del_obj = (
+            (
+                await db.execute(
+                    delete(ChatORM)
+                    .where(ChatORM.id.in_(del_list.id), ChatORM.owner_id == user_id)
+                    .returning(ChatORM.title)
+                )
+            )
+            .scalars()
+            .all()
+        )
         await db.commit()
 
     except SQLAlchemyError as e:

@@ -16,7 +16,6 @@ from user.schemas import (
     UserRegisterSchema,
 )
 from user.utils import (
-    access_security,
     access_token_conf,
     gen_jwt,
     password_hash,
@@ -98,8 +97,8 @@ async def logout(db: SessionDep, credentials: AccessCredentials) -> Response:
     )
     await db.commit()
     response = Response(status_code=status.HTTP_204_NO_CONTENT)
-    access_security.unset_access_cookie(response)
-    response.set_cookie(**refresh_token_conf(delete=True))
+    response.set_cookie(**access_token_conf(delt=True))
+    response.set_cookie(**refresh_token_conf(delt=True))
     return response
 
 
@@ -120,8 +119,8 @@ async def logout_from_all_devices(
     )
     await db.commit()
     response = Response(status_code=status.HTTP_204_NO_CONTENT)
-    access_security.unset_access_cookie(response)
-    response.set_cookie(**refresh_token_conf(delete=True))
+    response.set_cookie(**access_token_conf(delt=True))
+    response.set_cookie(**refresh_token_conf(delt=True))
     return response
 
 
@@ -225,6 +224,6 @@ async def change_password(
             status_code=status.HTTP_201_CREATED,
             content={"detail": "Password changed successfully, please log in again"},
         )
-        access_security.unset_access_cookie(response)
-        response.set_cookie(**refresh_token_conf(delete=True))
+        response.set_cookie(**access_token_conf(delt=True))
+        response.set_cookie(**refresh_token_conf(delt=True))
         return response
